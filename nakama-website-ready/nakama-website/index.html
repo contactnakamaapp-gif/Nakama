@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nakama — Find Your Anime Crew</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+/* ============== TOKENS ============== */
+:root {
+  --bg: #0f0a1a;
+  --bg-2: #160d24;
+  --bg-3: #1d1230;
+  --line: rgba(255,255,255,0.08);
+  --line-2: rgba(255,255,255,0.14);
+  --text: #ffffff;
+  --text-mute: rgba(255,255,255,0.62);
+  --text-dim: rgba(255,255,255,0.42);
+  --primary: #8B0FA8;
+  --primary-bright: #C964FF;
+  --primary-deep: #4A0866;
+  --gold: #F5C249;
+  --gold-deep: #B8860B;
+  --radius: 14px;
+  --radius-lg: 24px;
+  --shadow: 0 30px 80px -30px rgba(139,15,168,0.55);
+  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* ============== RESET ============== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-display);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  font-feature-settings: "ss01", "cv01";
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.005em;
+}
+a { color: inherit; text-decoration: none; }
+button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+img, svg { display: block; max-width: 100%; }
+
+/* ============== AMBIENT ============== */
+.ambient {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+}
+.orb { display: none !important; opacity: 0 !important;  display: none; }
+.orb-1 { width: 600px; height: 600px; top: -200px; left: -150px; background: #8B0FA8; }
+.orb-2 { width: 500px; height: 500px; top: 30%; right: -200px; background: #4A0866; animation-delay: -6s; }
+.orb-3 { width: 400px; height: 400px; bottom: -100px; left: 40%; background: #C964FF; opacity: 0.25; animation-delay: -12s;}
+@keyframes drift {
+  0%, 100% { transform: translate(0,0); }
+  50% { transform: translate(30px, -40px); }
+}
+.grain {
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  mix-blend-mode: overlay; opacity: 0.5;
+}
+.grid-lines { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ============== NAV ============== */
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 48px;
+  backdrop-filter: blur(16px);
+  background: rgba(15,10,26,0.6);
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-mark { width: 36px; height: 36px; display: block; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(139,15,168,0.4); }
+.brand-mark svg, .brand-mark img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.brand-name {
+  font-weight: 800; font-size: 19px; letter-spacing: -0.01em;
+}
+.nav-links { display: flex; align-items: center; gap: 32px; }
+.nav-links a { font-size: 14px; color: var(--text-mute); transition: color .2s; }
+.nav-links a:hover { color: var(--text); }
+.nav-cta {
+  background: var(--text); color: #0a0612 !important;
+  padding: 10px 18px; border-radius: 999px;
+  font-weight: 600; font-size: 13px;
+  transition: transform .2s, box-shadow .2s;
+}
+.nav-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(255,255,255,0.15); }
+
+/* ============== HERO ============== */
+.hero {
+  position: relative; z-index: 1;
+  padding: 80px 48px 60px;
+  max-width: 1440px; margin: 0 auto;
+}
+.hero-inner {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 80px;
+  align-items: center;
+}
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 7px 14px;
+  background: rgba(201,100,255,0.08);
+  border: 1px solid rgba(201,100,255,0.25);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 12px; color: var(--text-mute);
+  margin-bottom: 28px;
+}
+.eyebrow-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--primary-bright);
+  box-shadow: 0 0 8px var(--primary-bright);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 50% { opacity: 0.5; } }
+
+.hero-title {
+  font-size: clamp(48px, 7vw, 92px);
+  line-height: 0.96;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  margin-bottom: 24px;
+}
+.title-accent {
+  background: linear-gradient(135deg, #C964FF 0%, #8B0FA8 60%, #F5C249 130%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+  display: inline-block;
+}
+.title-sparkle {
+  font-size: 0.4em; color: var(--gold);
+  -webkit-text-fill-color: var(--gold);
+  margin-left: 0.15em; vertical-align: super;
+  display: inline-block;
+  animation: sparkle 3s ease-in-out infinite;
+}
+@keyframes sparkle {
+  0%, 100% { transform: rotate(0deg) scale(1); opacity: 1; }
+  50% { transform: rotate(180deg) scale(1.2); opacity: 0.7; }
+}
+.hero-sub {
+  font-size: 19px;
+  color: var(--text-mute);
+  max-width: 520px;
+  margin-bottom: 36px;
+  text-wrap: pretty;
+}
+
+.hero-cta {
+  display: flex; align-items: center; gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+/* ============== PRIMARY BUTTON ============== */
+.btn-primary {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 18px 28px;
+  background: linear-gradient(135deg, #C964FF 0%, #8B0FA8 100%);
+  color: white;
+  border-radius: 14px;
+  font-weight: 700; font-size: 16px;
+  box-shadow:
+    0 0 0 1px rgba(201,100,255,0.4),
+    0 20px 50px -15px rgba(139,15,168,0.7),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+  overflow: hidden;
+  transition: transform .2s, box-shadow .3s;
+  isolation: isolate;
+}
+.btn-primary::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(135deg, #F5C249 0%, #C964FF 50%, #8B0FA8 100%);
+  opacity: 0;
+  transition: opacity .35s;
+  z-index: -1;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px rgba(245,194,73,0.5), 0 25px 60px -15px rgba(245,194,73,0.45); }
+.btn-primary:hover::before { opacity: 1; }
+.btn-glow {
+  position: absolute; inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(120deg, transparent, rgba(245,194,73,0.6), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+  z-index: -2;
+  filter: blur(2px);
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+.btn-icon { width: 18px; height: 18px; }
+.btn-label { letter-spacing: -0.01em; }
+.btn-size {
+  font-family: var(--font-mono);
+  font-size: 11px; opacity: 0.7;
+  padding: 4px 8px; border-radius: 6px;
+  background: rgba(0,0,0,0.25);
+  margin-left: 4px;
+}
+.btn-primary-xl { padding: 22px 36px; font-size: 18px; }
+.btn-primary-xl .btn-icon { width: 22px; height: 22px; }
+
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 16px 22px;
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  font-weight: 500; font-size: 15px;
+  color: var(--text-mute);
+  transition: border-color .2s, color .2s;
+}
+.btn-ghost:hover { border-color: var(--text); color: var(--text); }
+
+.hero-note {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px; color: var(--text-dim);
+  flex-wrap: wrap;
+}
+.note-pill {
+  padding: 3px 8px;
+  background: rgba(245,194,73,0.12);
+  border: 1px solid rgba(245,194,73,0.3);
+  color: var(--gold);
+  border-radius: 6px;
+}
+
+/* ============== HERO MOCKUP ============== */
+.hero-mockup {
+  position: relative;
+  height: 640px;
+  display: flex; align-items: center; justify-content: center;
+}
+.mockup-glow {
+  position: absolute;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(201,100,255,0.35), transparent 70%);
+  filter: blur(60px);
+  z-index: 0;
+}
+.phone {
+  position: relative;
+  width: 320px;
+  aspect-ratio: 538 / 877;
+  height: auto;
+  background: linear-gradient(160deg, #1d1230, #0f0a1a);
+  border-radius: 42px;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow:
+    0 0 0 8px #0a0612,
+    0 0 0 9px rgba(201,100,255,0.3),
+    0 60px 80px -20px rgba(0,0,0,0.7),
+    0 30px 60px -10px rgba(139,15,168,0.4);
+  padding: 14px;
+  z-index: 2;
+}
+.phone-notch {
+  position: absolute;
+  top: 18px; left: 50%;
+  transform: translateX(-50%);
+  width: 90px; height: 22px;
+  background: #0a0612;
+  border-radius: 12px;
+}
+.phone-screen {
+  width: 100%; height: 100%;
+  background: linear-gradient(180deg, #1a0f2e 0%, #0f0a1a 100%);
+  border-radius: 30px;
+  padding: 38px 14px 14px;
+  display: flex; flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+.phone-screen-full {
+  padding: 0;
+  position: relative;
+}
+.app-screenshot {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 30px;
+  display: block;
+}
+.phone-screen-full { background: #000; padding: 0; }
+.app-status {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-mute);
+  padding: 0 6px;
+}
+.status-icons { display: flex; gap: 3px; }
+.status-icons .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text-mute); }
+
+.app-header {
+  display: flex; gap: 4px;
+  padding: 4px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px;
+}
+.app-tab {
+  flex: 1; text-align: center;
+  padding: 7px;
+  font-size: 11px; font-weight: 600;
+  color: var(--text-dim);
+  border-radius: 7px;
+  transition: all .2s;
+}
+.app-tab.active {
+  background: linear-gradient(135deg, #C964FF, #8B0FA8);
+  color: white;
+}
+
+.profile-card {
+  position: relative;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  overflow: hidden;
+  flex: 1;
+  display: flex; flex-direction: column;
+}
+.profile-img-photo { background: #000; }
+.profile-photo {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.profile-img {
+  position: relative;
+  flex: 1;
+  background: linear-gradient(135deg, var(--g1), var(--g2));
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.profile-initial {
+  font-size: 88px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.95);
+  font-family: var(--font-display);
+  letter-spacing: -0.05em;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.profile-deco { position: absolute; inset: 0; pointer-events: none; }
+.profile-deco svg { width: 100%; height: 100%; }
+.profile-meta {
+  padding: 10px;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(10px);
+}
+.profile-name {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 13px; font-weight: 700;
+  margin-bottom: 6px;
+}
+.match-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 3px 6px;
+  background: rgba(245,194,73,0.2);
+  border: 1px solid rgba(245,194,73,0.4);
+  color: var(--gold);
+  border-radius: 4px;
+}
+.profile-tags { display: flex; gap: 4px; }
+.tag {
+  font-size: 9px;
+  padding: 3px 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  color: var(--text-mute);
+}
+
+.compat-row { display: flex; gap: 6px; }
+.compat-chip {
+  flex: 1;
+  padding: 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 1px;
+}
+.chip-num { font-size: 16px; font-weight: 700; color: var(--gold); }
+.chip-lbl { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.action-bar {
+  display: flex; justify-content: space-around; align-items: center;
+  padding: 4px 0;
+}
+.act {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.act svg { width: 18px; height: 18px; }
+.act-skip { color: var(--text-mute); }
+.act-like { color: #ff5e8a; background: rgba(255,94,138,0.15); border-color: rgba(255,94,138,0.4); width: 50px; height: 50px; }
+.act-like svg { width: 22px; height: 22px; }
+.act-bolt { color: var(--gold); }
+
+/* Floating cards */
+.float-card {
+  position: absolute;
+  background: rgba(29,18,48,0.92);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(201,100,255,0.25);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+  z-index: 3;
+  animation: float 6s ease-in-out infinite;
+}
+.float-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+.float-card-quote {
+  top: 20px; left: -20px;
+  width: 200px;
+  animation-delay: -2s;
+}
+.float-quote {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.float-streak {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-mute);
+}
+.float-card-versus {
+  bottom: 40px; right: -20px;
+  width: 200px;
+}
+.float-versus {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.vs-side { display: flex; flex-direction: column; flex: 1; }
+.vs-name { font-size: 13px; font-weight: 700; }
+.vs-pct { font-family: var(--font-mono); font-size: 11px; color: var(--text-mute); }
+.vs-side:last-child { text-align: right; }
+.vs-divider {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gold);
+  font-weight: 700;
+}
+.vs-bar {
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.vs-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #C964FF, #F5C249);
+  border-radius: 2px;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+/* Decorative shapes */
+.deco { position: absolute; pointer-events: none; }
+.deco-diamond {
+  top: 20px; right: 30px;
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-deep));
+  transform: rotate(45deg);
+  border-radius: 4px;
+  opacity: 0.7;
+  animation: spin 12s linear infinite;
+  box-shadow: 0 0 30px rgba(245,194,73,0.5);
+}
+@keyframes spin { to { transform: rotate(405deg); } }
+.deco-ring {
+  bottom: 80px; left: 40px;
+  width: 70px; height: 70px;
+  border: 2px solid rgba(201,100,255,0.4);
+  border-radius: 50%;
+}
+.deco-ring::before {
+  content: ""; position: absolute; inset: 8px;
+  border: 1px dashed rgba(245,194,73,0.5);
+  border-radius: 50%;
+  animation: spin 20s linear infinite reverse;
+}
+.deco-spark {
+  top: 60%; left: 10%;
+  width: 16px; height: 16px;
+  color: var(--gold);
+}
+.deco-spark::before {
+  content: "✦";
+  font-size: 24px;
+  color: var(--gold);
+  animation: sparkle 2.5s ease-in-out infinite;
+}
+
+/* ============== STATS STRIP ============== */
+.stats-strip {
+  display: flex; justify-content: center; align-items: center;
+  gap: 48px;
+  margin-top: 80px;
+  padding: 28px 32px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(10px);
+}
+.stat { text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.stat-num {
+  font-size: 28px; font-weight: 800;
+  background: linear-gradient(135deg, #fff, #C964FF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+}
+.stat-lbl {
+  font-family: var(--font-mono);
+  font-size: 11px; color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.stat-sep {
+  width: 1px; height: 32px;
+  background: var(--line-2);
+}
+
+/* ============== SECTIONS ============== */
+.section {
+  position: relative; z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 120px 48px;
+}
+.section-head { text-align: center; margin-bottom: 72px; }
+.section-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 18px;
+}
+.section-title {
+  font-size: clamp(36px, 5vw, 60px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  max-width: 900px;
+  margin: 0 auto;
+  text-wrap: balance;
+}
+.hl {
+  background: linear-gradient(135deg, #C964FF, #F5C249);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ============== HOW ============== */
+.steps {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+  gap: 24px;
+  align-items: stretch;
+}
+.step {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  position: relative;
+  transition: transform .3s, border-color .3s, background .3s;
+}
+.step:hover {
+  transform: translateY(-4px);
+  border-color: rgba(201,100,255,0.4);
+  background: rgba(201,100,255,0.04);
+}
+.step-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  margin-bottom: 18px;
+}
+.step-icon {
+  width: 56px; height: 56px;
+  background: linear-gradient(135deg, rgba(201,100,255,0.15), rgba(139,15,168,0.05));
+  border: 1px solid rgba(201,100,255,0.3);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px;
+  color: var(--primary-bright);
+}
+.step-icon svg { width: 28px; height: 28px; }
+.step h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+.step p {
+  font-size: 14px;
+  color: var(--text-mute);
+  line-height: 1.5;
+}
+.step-arrow {
+  display: flex; align-items: center;
+  color: var(--text-dim);
+}
+.step-arrow svg { width: 50px; height: 12px; }
+
+/* ============== FEATURES ============== */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.feat {
+  position: relative;
+  padding: 32px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: transform .3s, border-color .3s;
+  display: flex; flex-direction: column;
+  min-height: 320px;
+}
+.feat::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(circle at top right, rgba(201,100,255,0.12), transparent 60%);
+  opacity: 0; transition: opacity .4s;
+}
+.feat:hover { transform: translateY(-4px); border-color: rgba(201,100,255,0.35); }
+.feat:hover::before { opacity: 1; }
+.feat-lg { grid-column: span 2; }
+.feat-gold { background: linear-gradient(180deg, rgba(245,194,73,0.06) 0%, rgba(245,194,73,0.01) 100%); border-color: rgba(245,194,73,0.2); }
+
+.feat-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 14px;
+  position: relative; z-index: 1;
+}
+.feat h3 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin-bottom: 10px;
+  position: relative; z-index: 1;
+}
+.feat p {
+  color: var(--text-mute);
+  font-size: 15px;
+  margin-bottom: 22px;
+  flex-shrink: 0;
+  position: relative; z-index: 1;
+}
+.feat-visual {
+  margin-top: auto;
+  position: relative; z-index: 1;
+}
+
+.feat-visual-feed { display: flex; gap: 10px; }
+.mini-card {
+  flex: 1;
+  aspect-ratio: 3/4;
+  background: linear-gradient(135deg, var(--c1), var(--c2));
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.mini-card .avatar-svg,
+.mini-card .avatar-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+  object-fit: cover;
+}
+.mini-card .avatar-tag {
+  position: absolute; bottom: 8px; left: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 600;
+  color: #fff;
+  background: rgba(0,0,0,0.55);
+  padding: 3px 7px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+  letter-spacing: -0.01em;
+}
+.mini-card b {
+  position: absolute; bottom: 8px; right: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 500;
+  background: rgba(0,0,0,0.5);
+  padding: 3px 6px;
+  border-radius: 4px;
+  color: var(--gold);
+}
+
+.feat-visual-meter { display: flex; flex-direction: column; gap: 10px; }
+.meter-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 30px;
+  align-items: center; gap: 12px;
+  font-size: 13px;
+}
+.meter-row span:first-child { color: var(--text-mute); }
+.meter-row span:last-child { font-family: var(--font-mono); font-size: 11px; color: var(--gold); text-align: right; }
+.meter {
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-bright), var(--gold));
+  border-radius: 3px;
+}
+
+.feat-visual-quote {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  background: rgba(245,194,73,0.06);
+  border: 1px solid rgba(245,194,73,0.2);
+  border-radius: 14px;
+}
+.q-mark {
+  font-size: 64px; line-height: 0.5;
+  font-family: serif; color: var(--gold);
+  font-weight: 800;
+  align-self: start;
+  margin-top: 8px;
+}
+.q-text {
+  font-size: 15px;
+  font-style: italic;
+  color: var(--text);
+  line-height: 1.4;
+  font-weight: 500;
+}
+.q-streak {
+  font-family: var(--font-mono);
+  font-size: 20px; font-weight: 700;
+  color: var(--gold);
+  align-self: end;
+}
+
+.feat-visual-vs { display: flex; flex-direction: column; gap: 8px; }
+.vs-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 36px;
+  align-items: center; gap: 10px;
+  font-size: 13px;
+}
+.vs-row span:last-child { font-family: var(--font-mono); font-size: 11px; text-align: right; color: var(--text-mute); }
+.vs-track {
+  height: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.vs-trackfill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff5e8a, #C964FF);
+  border-radius: 4px;
+}
+
+.feat-visual-watching { display: flex; flex-direction: column; gap: 8px; }
+.watch-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+}
+.watch-dot {
+  width: 6px; height: 6px;
+  background: #4ade80;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #4ade80;
+  animation: pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.feat-visual-chat { display: flex; flex-direction: column; gap: 6px; max-width: 100%; }
+.bubble {
+  max-width: 75%;
+  padding: 8px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+}
+.bubble-them {
+  align-self: flex-start;
+  background: rgba(255,255,255,0.06);
+  border-bottom-left-radius: 4px;
+}
+.bubble-me {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #C964FF, #8B0FA8);
+  border-bottom-right-radius: 4px;
+}
+
+/* ============== SAFETY ============== */
+.safety-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+}
+.safety-copy .section-eyebrow { color: var(--gold); margin-bottom: 18px; }
+.safety-copy .section-title { text-align: left; max-width: none; margin-bottom: 24px; }
+.safety-lede {
+  font-size: 17px;
+  color: var(--text-mute);
+  margin-bottom: 32px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.safety-list {
+  list-style: none;
+  display: flex; flex-direction: column;
+  gap: 16px;
+}
+.safety-list li {
+  display: flex; gap: 14px;
+  padding: 16px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  transition: border-color .2s, background .2s;
+}
+.safety-list li:hover {
+  border-color: rgba(245,194,73,0.3);
+  background: rgba(245,194,73,0.03);
+}
+.check {
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: rgba(74,222,128,0.15);
+  border: 1px solid rgba(74,222,128,0.4);
+  color: #4ade80;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+}
+.safety-list li > div { font-size: 14px; color: var(--text-mute); line-height: 1.55; }
+.safety-list li > div b { color: var(--text); font-weight: 700; }
+
+.safety-visual {
+  position: relative;
+  height: 480px;
+  display: flex; align-items: center; justify-content: center;
+}
+.shield {
+  position: relative;
+  width: 240px;
+}
+.shield svg { width: 100%; }
+.shield-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(201,100,255,0.4), transparent 70%);
+  filter: blur(40px);
+  z-index: -1;
+  animation: pulse 4s ease-in-out infinite;
+}
+.safety-card {
+  position: absolute;
+  background: rgba(29,18,48,0.92);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(201,100,255,0.25);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+}
+.safety-card-1 { top: 40px; left: -10px; animation: float 7s ease-in-out infinite; }
+.safety-card-2 { bottom: 40px; right: -10px; animation: float 7s ease-in-out infinite -3.5s; }
+.sc-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.sc-num {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 4px 0 2px;
+}
+.sc-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* ============== DOWNLOAD CTA ============== */
+.download {
+  padding: 80px 48px 120px;
+}
+.download-card {
+  position: relative;
+  text-align: center;
+  padding: 80px 40px;
+  background:
+    radial-gradient(ellipse at top, rgba(201,100,255,0.18), transparent 60%),
+    linear-gradient(180deg, rgba(29,18,48,0.6), rgba(15,10,26,0.4));
+  border: 1px solid rgba(201,100,255,0.25);
+  border-radius: 32px;
+  overflow: hidden;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.download-deco { position: absolute; inset: 0; pointer-events: none; }
+.dd-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(201,100,255,0.2);
+}
+.dd-ring-1 {
+  width: 600px; height: 600px;
+  top: -300px; left: 50%;
+  transform: translateX(-50%);
+}
+.dd-ring-2 {
+  width: 800px; height: 800px;
+  top: -400px; left: 50%;
+  transform: translateX(-50%);
+  border-color: rgba(245,194,73,0.1);
+}
+.dd-spark {
+  position: absolute;
+  color: var(--gold);
+  font-size: 20px;
+  animation: sparkle 3s ease-in-out infinite;
+}
+.dd-spark-1 { top: 30px; left: 60px; }
+.dd-spark-2 { top: 80px; right: 80px; animation-delay: -1s; }
+.dd-spark-3 { bottom: 60px; left: 30%; animation-delay: -2s; font-size: 14px; }
+
+.download-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 18px;
+  position: relative;
+}
+.download-title {
+  font-size: clamp(40px, 6vw, 72px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 16px;
+  position: relative;
+}
+.download-sub {
+  font-size: 18px;
+  color: var(--text-mute);
+  margin-bottom: 36px;
+  position: relative;
+}
+.download .btn-primary { position: relative; }
+.download-meta {
+  display: flex; justify-content: center; align-items: center;
+  gap: 32px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+  position: relative;
+}
+.dm-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px;
+  color: var(--text-mute);
+}
+.dm-item svg { width: 18px; height: 18px; color: var(--primary-bright); }
+
+.install-hint {
+  margin-top: 24px;
+  padding: 12px 20px;
+  display: inline-flex; align-items: center; gap: 12px;
+  background: rgba(245,194,73,0.06);
+  border: 1px solid rgba(245,194,73,0.15);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--text-mute);
+  position: relative;
+  text-align: left;
+}
+.hint-num {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: rgba(245,194,73,0.2);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ============== FOOTER ============== */
+.footer {
+  position: relative; z-index: 1;
+  border-top: 1px solid var(--line);
+  padding: 64px 48px 32px;
+  background: rgba(10, 6, 18, 0.5);
+}
+.footer-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.5fr 2fr;
+  gap: 80px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid var(--line);
+}
+.footer-tag {
+  margin-top: 16px;
+  color: var(--text-mute);
+  font-size: 14px;
+  max-width: 280px;
+}
+.footer-cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+.footer-col { display: flex; flex-direction: column; gap: 12px; }
+.footer-col-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 4px;
+}
+.footer-col a {
+  font-size: 14px;
+  color: var(--text-mute);
+  transition: color .2s;
+}
+.footer-col a:hover { color: var(--text); }
+
+.footer-base {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-top: 32px;
+  display: flex; justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* ============== REVEAL ANIMATIONS ============== */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity .8s ease, transform .8s ease;
+}
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ============== RESPONSIVE ============== */
+@media (max-width: 1024px) {
+  .hero-inner { grid-template-columns: 1fr; gap: 60px; }
+  .hero-mockup { height: 560px; }
+  .steps { grid-template-columns: repeat(2, 1fr); }
+  .step-arrow { display: none; }
+  .feature-grid { grid-template-columns: repeat(2, 1fr); }
+  .feat-lg { grid-column: span 2; }
+  .safety-grid { grid-template-columns: 1fr; gap: 60px; }
+  .footer-inner { grid-template-columns: 1fr; gap: 40px; }
+  .stats-strip { gap: 24px; flex-wrap: wrap; }
+}
+@media (max-width: 720px) {
+  .nav { padding: 16px 20px; }
+  .nav-links { gap: 16px; }
+  .nav-links a:not(.nav-cta) { display: none; }
+  .hero { padding: 48px 20px 40px; }
+  .section { padding: 80px 20px; }
+  .download { padding: 60px 20px 80px; }
+  .download-card { padding: 56px 24px; border-radius: 24px; }
+  .feature-grid { grid-template-columns: 1fr; }
+  .feat-lg { grid-column: span 1; }
+  .steps { grid-template-columns: 1fr; }
+  .footer { padding: 48px 24px 24px; }
+  .footer-cols { grid-template-columns: repeat(2, 1fr); }
+  .footer-base { flex-direction: column; gap: 8px; text-align: center; }
+  .stats-strip { padding: 20px; gap: 16px; }
+  .stat-sep { display: none; }
+  .stat { flex: 1 0 40%; }
+  .float-card-quote { left: -10px; width: 180px; top: 20px; transform: scale(0.85); transform-origin: top left; }
+  .float-card-versus { right: -10px; width: 180px; transform: scale(0.85); transform-origin: bottom right; }
+  .hero-title { font-size: 56px; }
+  .btn-primary { width: 100%; justify-content: center; }
+  .btn-ghost { width: 100%; justify-content: center; }
+  .install-hint { font-size: 12px; padding: 10px 14px; }
+}
+
+
+
+/* ============== EXTRA ANIMATIONS ============== */
+@keyframes floatY { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes glowPulse {
+  0%,100% { box-shadow: 0 0 0 1px rgba(201,100,255,0.4), 0 20px 50px -15px rgba(139,15,168,0.7), inset 0 1px 0 rgba(255,255,255,0.25); }
+  50% { box-shadow: 0 0 0 2px rgba(245,194,73,0.6), 0 25px 70px -10px rgba(245,194,73,0.5), inset 0 1px 0 rgba(255,255,255,0.4); }
+}
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes gradientShift {
+  0%,100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@keyframes tilt {
+  0%,100% { transform: rotate(-1deg); }
+  50% { transform: rotate(1deg); }
+}
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+/* Hero title gradient breathing */
+.title-accent {
+  background-size: 200% 200%;
+  animation: gradientShift 8s ease-in-out infinite;
+}
+
+/* Phone subtle floating */
+.phone {
+  animation: floatY 6s ease-in-out infinite;
+}
+
+/* Phone scanline overlay */
+.phone-screen-full::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(201,100,255,0.06) 50%, transparent 100%);
+  animation: scanline 4s linear infinite;
+  pointer-events: none;
+  border-radius: 30px;
+  z-index: 2;
+}
+
+/* Primary button glow pulse */
+.btn-primary { animation: glowPulse 3s ease-in-out infinite; }
+
+/* Step icons gentle tilt on hover */
+.step:hover .step-icon { animation: tilt 0.6s ease-in-out infinite; }
+
+/* Feat cards lift + glow */
+.feat { transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.4), border-color 0.3s, box-shadow 0.4s; }
+.feat:hover {
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: 0 30px 60px -20px rgba(201,100,255,0.3);
+}
+
+/* Mini cards (avatar feed) tilt on hover */
+.mini-card { transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.4); }
+.mini-card:hover { transform: translateY(-6px) rotate(-2deg) scale(1.04); z-index: 2; }
+.mini-card:hover ~ .mini-card { transform: translateX(4px); }
+
+/* Bubble pop-in for chat preview */
+.bubble {
+  opacity: 0;
+  animation: slideInUp 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.4) forwards;
+}
+.bubble-them { animation-delay: 0.2s; }
+.bubble-me { animation-delay: 0.6s; }
+.bubble:nth-child(3) { animation-delay: 1s; }
+
+/* Reveal class enhancement */
+.reveal { transition: opacity 1s cubic-bezier(0.2, 0.9, 0.3, 1), transform 1s cubic-bezier(0.2, 0.9, 0.3, 1); }
+.reveal.in { opacity: 1; transform: translateY(0) scale(1); }
+
+/* Stagger feat cards on reveal */
+.feat.reveal { transition-delay: calc(var(--i, 0) * 0.08s); }
+.step.reveal { transition-delay: calc(var(--i, 0) * 0.1s); }
+
+/* Meter fills animate width */
+@keyframes fillMeter {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.meter-fill, .vs-trackfill, .vs-fill {
+  transform-origin: left;
+  animation: fillMeter 1.6s cubic-bezier(0.2, 0.9, 0.3, 1) 0.4s both;
+}
+
+/* Sparkle deco rotating */
+.deco-spark::before { animation: sparkle 1.8s ease-in-out infinite; }
+
+/* Background orbs slow pulse */
+.orb-1 { animation: drift 18s ease-in-out infinite, glowPulse 10s ease-in-out infinite; }
+
+/* Section title underline grow on view */
+.section-title .hl {
+  background-size: 200% 200%;
+  animation: gradientShift 6s ease-in-out infinite;
+}
+
+/* CTA card concentric ring expansion */
+@keyframes ringExpand {
+  0% { transform: translateX(-50%) scale(0.8); opacity: 0.6; }
+  100% { transform: translateX(-50%) scale(1.4); opacity: 0; }
+}
+.dd-ring-1, .dd-ring-2 {
+  animation: ringExpand 4s ease-out infinite;
+}
+.dd-ring-2 { animation-delay: -2s; }
+
+/* Sparkles in CTA float */
+.dd-spark { animation: sparkle 3s ease-in-out infinite, floatY 5s ease-in-out infinite; }
+.dd-spark-2 { animation-delay: -1s, -2s; }
+.dd-spark-3 { animation-delay: -2s, -3s; }
+
+/* Nav cta hover wiggle */
+.nav-cta { transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.4); }
+.nav-cta:hover { transform: translateY(-2px) rotate(-2deg); }
+
+/* Status pulse dot */
+.eyebrow-dot { animation: pulse 1.5s ease-in-out infinite; }
+
+
+
+/* ============== CONSTANT ANIMATIONS ============== */
+@keyframes constantFloat { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-8px) rotate(1deg); } }
+@keyframes constantBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes constantPulseScale { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes constantSpinSlow { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+@keyframes constantShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes constantWiggle { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+@keyframes meterBreathe { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.3); } }
+@keyframes bubbleLoop {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes liveDot {
+  0%,100% { box-shadow: 0 0 0 0 rgba(74,222,128,0.6); }
+  50% { box-shadow: 0 0 0 6px rgba(74,222,128,0); }
+}
+@keyframes ctaIdleGlow {
+  0%,100% { filter: brightness(1) saturate(1); }
+  50% { filter: brightness(1.15) saturate(1.2); }
+}
+@keyframes tagPop {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+@keyframes deckSpin {
+  0% { transform: rotate(45deg); }
+  100% { transform: rotate(405deg); }
+}
+@keyframes glow1 { 0%,100% { opacity: 0.5; } 50% { opacity: 0.8; } }
+
+/* Mini avatar cards: each constantly bobs at staggered timing */
+.feat-visual-feed .mini-card { animation: constantFloat 4s ease-in-out infinite; }
+.feat-visual-feed .mini-card:nth-child(2) { animation-delay: -1.3s; }
+.feat-visual-feed .mini-card:nth-child(3) { animation-delay: -2.6s; }
+
+/* Meter fills constantly breathe */
+.meter-fill, .vs-trackfill { animation: meterBreathe 3s ease-in-out infinite; }
+
+/* Chat bubbles loop float */
+.bubble-them { animation: bubbleLoop 3s ease-in-out infinite, slideInUp 0.6s cubic-bezier(0.2,0.9,0.3,1.4) 0.2s both; }
+.bubble-me { animation: bubbleLoop 3s ease-in-out infinite -1.5s, slideInUp 0.6s cubic-bezier(0.2,0.9,0.3,1.4) 0.6s both; }
+
+/* Watching dots pulse */
+.watch-dot { animation: liveDot 2s ease-in-out infinite, pulse 2s ease-in-out infinite; }
+
+/* Quote card breathes */
+.feat-visual-quote { animation: constantBob 5s ease-in-out infinite; }
+.q-mark { animation: constantWiggle 4s ease-in-out infinite; transform-origin: bottom left; }
+.q-streak { animation: constantPulseScale 2.5s ease-in-out infinite; transform-origin: center; display: inline-block; }
+
+/* Step icons constantly tilt */
+.step-icon { animation: constantWiggle 6s ease-in-out infinite; }
+.step:nth-child(3) .step-icon { animation-delay: -2s; }
+.step:nth-child(5) .step-icon { animation-delay: -4s; }
+.step:nth-child(7) .step-icon { animation-delay: -1s; }
+
+/* Step number digits subtle pulse */
+.step-num { animation: constantPulseScale 3s ease-in-out infinite; transform-origin: left; display: inline-block; }
+
+/* Primary CTA always glowing */
+.btn-primary { animation: glowPulse 3s ease-in-out infinite, ctaIdleGlow 4s ease-in-out infinite; }
+
+/* Nav CTA breathes */
+.nav-cta { animation: constantPulseScale 2.5s ease-in-out infinite; }
+
+/* Tags subtle pop */
+.feat-tag, .section-eyebrow, .download-eyebrow { animation: tagPop 3s ease-in-out infinite; transform-origin: left; display: inline-block; }
+.match-badge { animation: tagPop 2s ease-in-out infinite; }
+.note-pill { animation: tagPop 3s ease-in-out infinite; display: inline-block; }
+
+/* VS divider rotates subtly */
+.vs-divider { animation: constantWiggle 2s ease-in-out infinite; display: inline-block; }
+
+/* Compat chip numbers pulse */
+.chip-num { animation: constantPulseScale 2.5s ease-in-out infinite; display: inline-block; }
+
+/* Safety check ticks pulse */
+.check { animation: constantPulseScale 2s ease-in-out infinite; }
+.safety-list li:nth-child(2) .check { animation-delay: -0.5s; }
+.safety-list li:nth-child(3) .check { animation-delay: -1s; }
+.safety-list li:nth-child(4) .check { animation-delay: -1.5s; }
+
+/* Floating cards already float; ensure they always do */
+.float-card { animation: float 6s ease-in-out infinite; }
+.float-card-versus { animation: float 6s ease-in-out infinite -3s; }
+
+/* Safety cards always float */
+.safety-card-1, .safety-card-2 { animation: float 7s ease-in-out infinite; }
+.safety-card-2 { animation-delay: -3.5s; }
+
+/* Shield always pulses */
+.shield-glow { animation: pulse 4s ease-in-out infinite, constantPulseScale 4s ease-in-out infinite; }
+
+/* Stat numbers (if any visible) breathe */
+.stat-num { animation: gradientShift 6s ease-in-out infinite; background-size: 200% 200%; }
+
+/* Brand mark gentle bob */
+.brand-mark { animation: constantBob 4s ease-in-out infinite; }
+
+/* Title sparkle always rotates */
+.title-sparkle { animation: sparkle 2s ease-in-out infinite, constantSpinSlow 5s linear infinite; display: inline-block; }
+
+/* Nav glow border bottom shimmer */
+.nav { position: sticky; }
+.nav::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,100,255,0.6), rgba(245,194,73,0.6), rgba(201,100,255,0.6), transparent);
+  background-size: 200% 100%;
+  animation: constantShimmer 4s linear infinite;
+}
+
+/* Hero subtitle gradient sweep */
+.hero-sub { background: linear-gradient(90deg, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,0.62) 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: constantShimmer 6s linear infinite; }
+
+/* Decorative diamond keeps spinning */
+.deco-diamond { animation: deckSpin 12s linear infinite, glow1 3s ease-in-out infinite; }
+
+/* Avatar tag chips constantly bob */
+.avatar-tag { animation: constantBob 3s ease-in-out infinite; display: inline-block; }
+
+/* Background orbs always drift (already set) plus extra */
+.orb { animation: drift 18s ease-in-out infinite, glow1 8s ease-in-out infinite; }
+
+/* Logo border glow */
+.brand-mark img { animation: glow1 3s ease-in-out infinite; }
+
+/* ============== ANIME CURSOR ============== */
+* { cursor: none !important; }
+.anime-cursor {
+  position: fixed; top: 0; left: 0;
+  width: 28px; height: 28px;
+  pointer-events: none;
+  z-index: 99999;
+  transform: translate(-50%, -50%);
+  mix-blend-mode: screen;
+  transition: transform 0.05s ease-out;
+}
+.anime-cursor svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 6px rgba(245,194,73,0.8)); }
+.anime-cursor.click { transform: translate(-50%, -50%) scale(0.7); }
+.anime-cursor.hover { transform: translate(-50%, -50%) scale(1.4); }
+
+.cursor-trail {
+  position: fixed;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99998;
+  background: radial-gradient(circle, #F5C249, transparent 70%);
+  transform: translate(-50%, -50%);
+  animation: trailFade 0.7s ease-out forwards;
+  mix-blend-mode: screen;
+}
+.cursor-spark {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99998;
+  font-size: 12px;
+  color: #C964FF;
+  transform: translate(-50%, -50%);
+  animation: sparkFade 0.9s ease-out forwards;
+  text-shadow: 0 0 8px #C964FF;
+}
+@keyframes trailFade {
+  0% { opacity: 0.9; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+}
+@keyframes sparkFade {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5) rotate(0deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5) rotate(180deg); }
+}
+@media (max-width: 720px) { * { cursor: auto !important; } .anime-cursor, .cursor-trail, .cursor-spark { display: none; } }
+
+/* ============== SAKURA PETALS ============== */
+@keyframes sakuraFall {
+  0% { transform: translate(0, -10vh) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.85; }
+  90% { opacity: 0.85; }
+  100% { transform: translate(60px, 110vh) rotate(540deg); opacity: 0; }
+}
+.sakura-layer {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+.sakura {
+  position: absolute;
+  width: 14px; height: 14px;
+  background: linear-gradient(135deg, #ffd1e0 0%, #ff8fb8 70%, #d96a93 100%);
+  border-radius: 100% 0 100% 0;
+  filter: drop-shadow(0 0 3px rgba(255,143,184,0.35));
+  opacity: 0.55;
+  animation: sakuraFall 18s linear infinite;
+}
+.sakura:nth-child(1)  { left: 6%;  animation-duration: 14s; animation-delay: -1s; }
+.sakura:nth-child(2)  { left: 17%; animation-duration: 12s; animation-delay: -4s; transform: scale(0.7); }
+.sakura:nth-child(3)  { left: 28%; animation-duration: 16s; animation-delay: -7s; }
+.sakura:nth-child(4)  { left: 39%; animation-duration: 13s; animation-delay: -2s; transform: scale(1.1); }
+.sakura:nth-child(5)  { left: 51%; animation-duration: 15s; animation-delay: -9s; transform: scale(0.85); }
+.sakura:nth-child(6)  { left: 63%; animation-duration: 11s; animation-delay: -5s; }
+.sakura:nth-child(7)  { left: 75%; animation-duration: 14s; animation-delay: -3s; transform: scale(0.75); }
+.sakura:nth-child(8)  { left: 86%; animation-duration: 13s; animation-delay: -8s; }
+.sakura:nth-child(9)  { left: 94%; animation-duration: 16s; animation-delay: -11s; transform: scale(0.9); }
+@media (prefers-reduced-motion: reduce) { .sakura-layer { display: none; } }
+
+</style>
+</head>
+<body>
+<div class="sakura-layer" aria-hidden="true">
+  <div class="sakura"></div><div class="sakura"></div><div class="sakura"></div>
+  <div class="sakura"></div><div class="sakura"></div><div class="sakura"></div>
+  <div class="sakura"></div><div class="sakura"></div><div class="sakura"></div>
+</div>
+
+
+
+
+<!-- ============== AMBIENT BACKGROUND ============== -->
+<div class="ambient" aria-hidden="true">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="grain"></div>
+  <svg class="grid-lines" viewBox="0 0 1440 900" preserveAspectRatio="none">
+    <defs>
+      <pattern id="dots" width="32" height="32" patternUnits="userSpaceOnUse">
+        <circle cx="1" cy="1" r="1" fill="rgba(255,255,255,0.04)" />
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#dots)" />
+  </svg>
+</div>
+
+<!-- ============== NAV ============== -->
+<header class="nav">
+  <a href="#" class="brand">
+    <span class="brand-mark" aria-hidden="true"><img src="assets/nakama-logo.jpeg" alt="Nakama" /></span>
+    <span class="brand-name">Nakama</span>
+  </a>
+  <nav class="nav-links">
+    <a href="#how">How it works</a>
+    <a href="#features">Features</a>
+    <a href="#safety">Safety</a>
+    <a href="/nakama.apk" class="nav-cta" download>Download</a>
+  </nav>
+</header>
+
+<!-- ============== HERO ============== -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <div class="eyebrow">
+        <span class="eyebrow-dot"></span>
+        <span>v1.0 — Now in open beta</span>
+      </div>
+      <h1 class="hero-title">
+        Find Your<br />
+        <span class="title-accent" style="color: rgb(73, 245, 131)">Anime Crew<span class="title-sparkle">✦</span></span>
+      </h1>
+      <p class="hero-sub">
+        A social app for anime fans — match on taste, debate hot takes, and find people who actually get why that filler arc made you cry.
+      </p>
+
+      <div class="hero-cta">
+        <a href="/nakama.apk" class="btn-primary" download>
+          <span class="btn-glow"></span>
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="btn-label">Download APK</span>
+          <span class="btn-size">23 MB</span>
+        </a>
+        <a href="#how" class="btn-ghost">
+          See how it works
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M5 12h14m0 0l-6-6m6 6l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+
+      <p class="hero-note">
+        <span class="note-pill">Android</span>
+        <span>·</span>
+        <span>Free</span>
+      </p>
+    </div>
+
+    <!-- ============== HERO MOCKUP ============== -->
+    <div class="hero-mockup" style="transform: translate3d(5.98944px, 1.56447px, 0px)">
+      <div class="mockup-glow"></div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen phone-screen-full">
+            <img src="assets/mikasa-profile.png" alt="Nakama app screenshot" class="app-screenshot" />
+          </div>
+        </div>
+
+      <!-- Floating side cards -->
+      <div class="float-card float-card-versus">
+        <div class="float-label">Hot Take · Live</div>
+        <div class="float-versus">
+          <div class="vs-side"><span class="vs-name">Goku</span><span class="vs-pct">49%</span></div>
+          <div class="vs-divider">VS</div>
+          <div class="vs-side"><span class="vs-name">Saitama</span><span class="vs-pct">51%</span></div>
+        </div>
+        <div class="vs-bar"><div class="vs-fill" style="width: 90.037px"></div></div>
+      </div>
+
+      <!-- Decorative shapes -->
+      <div class="deco deco-diamond"></div>
+      <div class="deco deco-ring"></div>
+      <div class="deco deco-spark"></div>
+    </div>
+  </div>
+
+  
+</section>
+
+<!-- ============== HOW IT WORKS ============== -->
+<section id="how" class="section how">
+  <div class="section-head">
+    <div class="section-eyebrow">// 01 — Getting started</div>
+    <h2 class="section-title">From zero to crew in <span class="hl">under two minutes.</span></h2>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-icon" data-shape="profile">
+        <svg viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="18" r="7" stroke="currentColor" stroke-width="2"/>
+          <path d="M10 40c2-7 8-11 14-11s12 4 14 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="38" cy="12" r="2" fill="#F5C249"/>
+        </svg>
+      </div>
+      <h3>Sign up</h3>
+      <p>Pick a handle, drop an avatar. No phone, no email-spam, no nonsense.</p>
+    </div>
+
+    <div class="step-arrow">
+      <svg viewBox="0 0 60 12" fill="none"><path d="M2 6h54m0 0l-5-5m5 5l-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </div>
+
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-icon" data-shape="taste">
+        <svg viewBox="0 0 48 48" fill="none">
+          <rect x="6" y="10" width="12" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+          <rect x="22" y="14" width="12" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+          <rect x="14" y="26" width="12" height="14" rx="2" stroke="currentColor" stroke-width="2" fill="rgba(245,194,73,0.15)"/>
+          <circle cx="38" cy="34" r="3" fill="#F5C249"/>
+        </svg>
+      </div>
+      <h3>Set your taste</h3>
+      <p>Tag favourite shows, characters, genres, sub vs dub. The pickier, the better.</p>
+    </div>
+
+    <div class="step-arrow">
+      <svg viewBox="0 0 60 12" fill="none"><path d="M2 6h54m0 0l-5-5m5 5l-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </div>
+
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-icon" data-shape="discover">
+        <svg viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="14" stroke="currentColor" stroke-width="2"/>
+          <circle cx="24" cy="24" r="8" stroke="currentColor" stroke-width="2"/>
+          <circle cx="24" cy="24" r="3" fill="#F5C249"/>
+          <circle cx="40" cy="10" r="2" fill="currentColor"/>
+        </svg>
+      </div>
+      <h3>Discover</h3>
+      <p>Scroll a feed of fans ranked by taste compatibility — local or worldwide.</p>
+    </div>
+
+    <div class="step-arrow">
+      <svg viewBox="0 0 60 12" fill="none"><path d="M2 6h54m0 0l-5-5m5 5l-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </div>
+
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-icon" data-shape="chat">
+        <svg viewBox="0 0 48 48" fill="none">
+          <path d="M8 12h32v22H22l-8 8v-8H8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="18" cy="23" r="1.5" fill="currentColor"/>
+          <circle cx="24" cy="23" r="1.5" fill="currentColor"/>
+          <circle cx="30" cy="23" r="1.5" fill="#F5C249"/>
+        </svg>
+      </div>
+      <h3>Start chatting</h3>
+      <p>DM your matches, share reactions, build the crew you didn't know you needed.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FEATURES ============== -->
+<section id="features" class="section features">
+  <div class="section-head">
+    <div class="section-eyebrow">// 02 — Inside the app</div>
+    <h2 class="section-title">Built for fans who <span class="hl">actually watch the show.</span></h2>
+  </div>
+
+  <div class="feature-grid">
+    <article class="feat feat-lg">
+      <div class="feat-tag">Discover Feed</div>
+      <h3>A scroll, not a swipe.</h3>
+      <p>Endless feed of fans, ranked by how much your taste actually overlaps. No randoms.</p>
+      <div class="feat-visual feat-visual-feed">
+        <div class="mini-card" style="--c1:#C964FF;--c2:#8B0FA8;">
+          <img class="avatar-img" src="https://api.dicebear.com/7.x/adventurer/svg?seed=Luffy&backgroundColor=8B0FA8,C964FF&radius=0" alt="@luffy avatar" />
+          <span class="avatar-tag">@luffy</span>
+          <b>91%</b>
+        </div>
+        <div class="mini-card" style="--c1:#F5C249;--c2:#B8860B;">
+          <img class="avatar-img" src="https://api.dicebear.com/7.x/adventurer/svg?seed=Naruto&backgroundColor=F5C249,B8860B&radius=0" alt="@naruto avatar" />
+          <span class="avatar-tag">@naruto</span>
+          <b>87%</b>
+        </div>
+        <div class="mini-card" style="--c1:#5A2A82;--c2:#2A0F4A;">
+          <img class="avatar-img" src="https://api.dicebear.com/7.x/adventurer/svg?seed=Ichigo&backgroundColor=5A2A82,2A0F4A&radius=0" alt="@ichigo avatar" />
+          <span class="avatar-tag">@ichigo</span>
+          <b>82%</b>
+        </div>
+      </div>
+    </article>
+
+    <article class="feat">
+      <div class="feat-tag">Compatibility</div>
+      <h3>Taste-matched, not vibes-matched.</h3>
+      <p>An algorithm that weighs favourite shows, characters, sub/dub, and viewing habits.</p>
+      <div class="feat-visual feat-visual-meter">
+        <div class="meter-row"><span>Shonen</span><div class="meter"><div class="meter-fill" style="width:92%"></div></div><span>92</span></div>
+        <div class="meter-row"><span>Slice of life</span><div class="meter"><div class="meter-fill" style="width:74%"></div></div><span>74</span></div>
+        <div class="meter-row"><span>Mecha</span><div class="meter"><div class="meter-fill" style="width:56%"></div></div><span>56</span></div>
+      </div>
+    </article>
+
+    <article class="feat feat-gold">
+      <div class="feat-tag">Daily Quote</div>
+      <h3>Who Said It?</h3>
+      <p>One quote a day. Guess the speaker. Build a streak. Brag in the leaderboard.</p>
+      <div class="feat-visual feat-visual-quote">
+        <div class="q-mark">"</div>
+        <div class="q-text" id="featQuoteText">A man dies when he is forgotten</div>
+        <div class="q-streak" id="featQuoteStreak">🔥 24</div>
+      </div>
+    </article>
+
+    <article class="feat">
+      <div class="feat-tag">Hot Takes &amp; Versus</div>
+      <h3>Settle the discourse.</h3>
+      <p>Vote on the eternal debates. Drop hot takes. Watch your timeline catch fire.</p>
+      <div class="feat-visual feat-visual-vs">
+        <div class="vs-row"><span>Goku</span><div class="vs-track"><div class="vs-trackfill" style="width:49%"></div></div><span>49%</span></div>
+        <div class="vs-row"><span>Naruto</span><div class="vs-track"><div class="vs-trackfill" style="width:51%"></div></div><span>51%</span></div>
+      </div>
+    </article>
+
+    <article class="feat">
+      <div class="feat-tag">Currently Watching</div>
+      <h3>Real-time reactions.</h3>
+      <p>Share what episode you just finished. Find people screaming about the same scene.</p>
+      <div class="feat-visual feat-visual-watching">
+        <div class="watch-row"><span class="watch-dot"></span>Ep 12 just hit different</div>
+        <div class="watch-row"><span class="watch-dot"></span>That OST tho 🎧</div>
+        <div class="watch-row"><span class="watch-dot"></span>Need a hug after S2 finale</div>
+      </div>
+    </article>
+
+    <article class="feat feat-lg">
+      <div class="feat-tag">Safe Chat</div>
+      <h3>DMs that don't suck.</h3>
+      <p>Filters for inappropriate content, instant reports, real moderation.</p>
+      <div class="feat-visual feat-visual-chat">
+        <div class="bubble bubble-them">have you seen the new ep??</div>
+        <div class="bubble bubble-me">don't spoil i'm 2 behind 😭</div>
+        <div class="bubble bubble-them">ok ok BUT it's peak</div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ============== SAFETY ============== -->
+<section id="safety" class="section safety">
+  <div class="safety-grid">
+    <div class="safety-copy">
+      <div class="section-eyebrow">// 03 — Safety first</div>
+      <h2 class="section-title">A space built for <span class="hl">friendship, not creeps.</span></h2>
+      <p class="safety-lede">
+        Nakama is friendship-only. Strictly. Reports are reviewed by real humans, and we ban fast and permanently for behaviour that crosses the line.
+      </p>
+
+      <ul class="safety-list">
+        <li><span class="check">✓</span><div><b>Zero tolerance</b> for inappropriate content or harassment.</div></li>
+        <li><span class="check">✓</span><div><b>No personal contact info</b> — phone numbers, socials, and addresses are filtered automatically.</div></li>
+        <li><span class="check">✓</span><div><b>Every report reviewed</b> by a human moderator within 24 hours.</div></li>
+        <li><span class="check">✓</span><div><b>Permanent bans</b> for violations. One strike, no comeback.</div></li>
+        
+      </ul>
+    </div>
+
+    <div class="safety-visual">
+      <div class="shield">
+        <svg viewBox="0 0 200 220" fill="none">
+          <path d="M100 10 L180 40 V110 C180 160 140 200 100 210 C60 200 20 160 20 110 V40 Z" stroke="url(#sh1)" stroke-width="2" fill="rgba(139,15,168,0.08)"/>
+          <path d="M100 30 L160 52 V108 C160 148 130 180 100 188 C70 180 40 148 40 108 V52 Z" stroke="rgba(245,194,73,0.4)" stroke-width="1" fill="none"/>
+          <path d="M70 110 L92 130 L138 84" stroke="#F5C249" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <defs>
+            <linearGradient id="sh1" x1="0" y1="0" x2="200" y2="220">
+              <stop offset="0%" stop-color="#C964FF"/>
+              <stop offset="100%" stop-color="#8B0FA8"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="shield-glow"></div>
+      </div>
+
+      <div class="safety-card safety-card-1">
+        <div class="sc-label">Auto-filtered</div>
+        <div class="sc-num">14,200</div>
+        <div class="sc-desc">messages last week</div>
+      </div>
+      <div class="safety-card safety-card-2">
+        <div class="sc-label">Avg review time</div>
+        <div class="sc-num">3h 12m</div>
+        <div class="sc-desc">for flagged reports</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== DOWNLOAD CTA ============== -->
+<section id="download" class="section download">
+  <div class="download-card">
+    <div class="download-deco" aria-hidden="true">
+      <div class="dd-ring dd-ring-1"></div>
+      <div class="dd-ring dd-ring-2"></div>
+      <div class="dd-spark dd-spark-1">✦</div>
+      <div class="dd-spark dd-spark-2">✦</div>
+      <div class="dd-spark dd-spark-3">✦</div>
+    </div>
+
+    <div class="download-eyebrow">// Ready when you are</div>
+    <h2 class="download-title">Ready to find <span class="hl">your crew?</span></h2>
+    <p class="download-sub">Free. No ads. No payments. No Play Store gatekeeping. Just the app.</p>
+
+    <a href="/nakama.apk" class="btn-primary btn-primary-xl" download>
+      <span class="btn-glow"></span>
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="btn-label">Download APK</span>
+      <span class="btn-size">23 MB · v1.0</span>
+    </a>
+
+    <div class="download-meta">
+      <div class="dm-item">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6l-8-4z" stroke="currentColor" stroke-width="1.6"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Verified safe
+      </div>
+      <div class="dm-item">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Updated weekly
+      </div>
+      <div class="dm-item">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>
+        Android 8.0+
+      </div>
+    </div>
+
+    <p class="install-hint">
+      <span class="hint-num">i</span>
+      First-time installing an APK? Enable "Install unknown apps" in your browser settings. Takes 10 seconds.
+    </p>
+  </div>
+</section>
+
+<!-- ============== FOOTER ============== -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="#" class="brand">
+        <span class="brand-mark" aria-hidden="true"><img src="assets/nakama-logo.jpeg" alt="Nakama" /></span>
+        <span class="brand-name">Nakama</span>
+      </a>
+      <p class="footer-tag">Find your anime crew. Friendship only — always.</p>
+    </div>
+
+    <div class="footer-cols">
+      <div class="footer-col">
+        <div class="footer-col-title">App</div>
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#safety">Safety</a>
+        <a href="/nakama.apk" download>Download APK</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Legal</div>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms &amp; Conditions</a>
+        <a href="safety.html">Community Guidelines</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Contact</div>
+        <a href="mailto:contact.nakama.app@gmail.com">contact.nakama.app@gmail.com</a>
+        <a href="mailto:contact.nakama.app@gmail.com">
+</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-base">
+    <div>© 2026 Nakama. All rights reserved.</div>
+    <div class="footer-meta">Made by weebs, for weebs.</div>
+  </div>
+</footer>
+
+<script>
+// Reveal-on-scroll
+const targets = document.querySelectorAll('.section, .hero-mockup, .stats-strip, .step, .feat, .safety-list li, .download-card');
+targets.forEach((el, i) => { el.classList.add('reveal'); el.style.setProperty('--i', i % 6); });
+
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('in');
+      io.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.08, rootMargin: '0px 0px -50px 0px' });
+
+targets.forEach(el => io.observe(el));
+
+// Subtle parallax on hero mockup (cursor follow)
+const mockup = document.querySelector('.hero-mockup');
+if (mockup && window.matchMedia('(min-width: 1024px)').matches) {
+  document.addEventListener('mousemove', (e) => {
+    const x = (e.clientX / window.innerWidth - 0.5) * 12;
+    const y = (e.clientY / window.innerHeight - 0.5) * 12;
+    /* parallax disabled — inline transform set */
+  });
+}
+
+</script>
+
+
+<!-- ============== TWEAKS ============== -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<div id="tweaks-root"></div>
+<script type="text/babel" src="tweaks-app.jsx"></script>
+
+<div class="anime-cursor" id="animeCursor" aria-hidden="true">
+  <svg viewBox="0 0 32 32" fill="none">
+    <defs>
+      <linearGradient id="curGrad" x1="0" y1="0" x2="32" y2="32">
+        <stop offset="0%" stop-color="#F5C249"/>
+        <stop offset="100%" stop-color="#C964FF"/>
+      </linearGradient>
+    </defs>
+    <circle cx="16" cy="16" r="3" fill="url(#curGrad)"/>
+    <circle cx="16" cy="16" r="10" stroke="url(#curGrad)" stroke-width="1.5" fill="none" opacity="0.7"/>
+    <path d="M16 2 L16 8 M16 24 L16 30 M2 16 L8 16 M24 16 L30 16" stroke="#F5C249" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>
+</div>
+<script>
+(() => {
+  const cursor = document.getElementById('animeCursor');
+  if (!cursor) return;
+  let mouseX = 0, mouseY = 0;
+  let lastTrailTime = 0, lastSparkTime = 0;
+
+  document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX; mouseY = e.clientY;
+    cursor.style.left = mouseX + 'px';
+    cursor.style.top = mouseY + 'px';
+
+    const now = Date.now();
+    if (now - lastTrailTime > 30) {
+      const t = document.createElement('div');
+      t.className = 'cursor-trail';
+      t.style.left = mouseX + 'px';
+      t.style.top = mouseY + 'px';
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 700);
+      lastTrailTime = now;
+    }
+    if (now - lastSparkTime > 180) {
+      const s = document.createElement('div');
+      s.className = 'cursor-spark';
+      s.textContent = '✦';
+      s.style.left = (mouseX + (Math.random() - 0.5) * 24) + 'px';
+      s.style.top = (mouseY + (Math.random() - 0.5) * 24) + 'px';
+      s.style.color = Math.random() > 0.5 ? '#F5C249' : '#C964FF';
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 900);
+      lastSparkTime = now;
+    }
+  });
+
+  document.addEventListener('mousedown', () => cursor.classList.add('click'));
+  document.addEventListener('mouseup', () => cursor.classList.remove('click'));
+
+  document.querySelectorAll('a, button, .feat, .step').forEach(el => {
+    el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+    el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+  });
+})();
+</script>
+</body>
+</html>
